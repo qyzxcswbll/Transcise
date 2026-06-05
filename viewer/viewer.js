@@ -32,23 +32,53 @@ function hideDropZone() {
   if (viewerArea) viewerArea.style.display = "block";
 }
 
+/**
+ * 重置查看器状态，为加载新文件做准备
+ * 清除旧内容、旧状态、旧工具栏
+ */
+function resetViewer() {
+  // 清除旧翻译状态
+  transciseState.markdownText = "";
+  transciseState.chunks = [];
+  transciseState.translations = {};
+  transciseState.isTranslating = false;
+  transciseState.hasTranslation = false;
+
+  // 清除旧工具栏
+  var oldToolbar = document.getElementById("transcise-toolbar");
+  if (oldToolbar) oldToolbar.parentNode.removeChild(oldToolbar);
+
+  // 清除旧内容
+  if (viewerArea) viewerArea.innerHTML = "";
+  viewerArea.style.display = "none";
+
+  // 清除旧进度条（可能在 body 其他地方）
+  var oldProgress = document.getElementById("transcise-progress-bar");
+  if (oldProgress) oldProgress.parentNode.removeChild(oldProgress);
+}
+
 function handleFile(file) {
   if (!file) return;
   var n = file.name.toLowerCase();
   var ok = [".md",".markdown",".mdown",".mkd"].some(function(e) { return n.endsWith(e); });
   if (!ok) { showError("请选择 Markdown 文件 (.md, .markdown)"); return; }
+  // 如果查看器已有内容，先重置再加载新文件
+  if (transciseState.markdownText) {
+    resetViewer();
+  }
   var r = new FileReader();
   r.onload = function(e) {
     transciseState.markdownText = e.target.result;
     if (!transciseState.markdownText.trim()) { showError("文件为空"); return; }
+    // 更新文件名显示预览状态
     hideDropZone(); renderMarkdown(transciseState.markdownText);
+    var brand = document.querySelector(".transcise-brand");
+    if (brand) brand.textContent = "📄 " + file.name;
     // 预览模式：仅渲染 Markdown，不自动翻译
     // 用户点击 "翻译" 按钮时再执行翻译
   };
   r.onerror = function() { showError("读取文件失败"); };
   r.readAsText(file);
-  document.addEventListener("dragover", function(e) { e.preventDefault(); });
-  document.addEventListener("drop", function(e) { e.preventDefault(); if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]); });
 }
 
 fileInput.addEventListener("change", function(e) { if (e.target.files[0]) handleFile(e.target.files[0]); });
@@ -328,6 +358,19 @@ function updateProgress(d,t) { var st=document.getElementById("transcise-status"
 function showTBError(m) { var st=document.getElementById("transcise-status"); if(st) { st.textContent="✗ "+m; st.className="transcise-status status-error"; } }
 
 loadConfig();
+
+// ===== 全局拖拽处理：阻止浏览器默认打开文件 =====
+// 必须放在顶层注册，不能在 handleFile 内部才注册
+// 否则在首次文件加载前拖拽到页面空白区会触发浏览器默认行为
+document.addEventListener("dragover", function(e) {
+  e.preventDefault();
+});
+document.addEventListener("drop", function(e) {
+  e.preventDefault();
+  if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+    handleFile(e.dataTransfer.files[0]);
+  }
+});
 
 // 检查是否从 popup 传入的文件
 checkPopupFile();

@@ -1,7 +1,7 @@
 {
     "manifest_version": 3,
     "name": "Transcise - Markdown Translator",
-    "version": "1.0.0",
+    "version": "1.2.0",
     "description": "在浏览器中渲染 Markdown 文件并使用 DeepSeek AI 进行翻译，支持双语对照和纯译文显示",
     "author": "Transcise",
     "permissions": [
