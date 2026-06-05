@@ -1,7 +1,10 @@
 /* Transcise Content Styles */
 
-/* === Global Reset === */
-body { margin: 0 !important; padding: 0 !important; background: #f8f9fa !important; }
+/* 注意：不要放置全局 body 样式！
+ * 此 CSS 通过 manifest.json 的 content_scripts.css 注入所有 .md 页面，
+ * 包括 Chrome 原生文本查看器。全局样式会干扰正常渲染。
+ * 所有样式必须限定在扩展专用 class/ID 下。
+ */
 
 /* === Markdown Content === */
 .transcise-markdown-body {
