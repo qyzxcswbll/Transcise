@@ -1,4 +1,4 @@
-﻿// Transcise Viewer - Markdown File Drag & Drop Viewer
+// Transcise Viewer - Markdown File Drag & Drop Viewer
 "use strict";
 
 var transciseState = {
@@ -181,6 +181,9 @@ function dismissApiKeyPrompt() {
   if (s) { s.textContent = ""; s.className = "transcise-status"; }
 }
 
+/**
+ * 并发翻译：支持同时发起多个请求，大幅提升翻译速度
+ */
 async function performTranslation() {
   if (!transciseState.apiKey) { showApiKeyPrompt(); return; }
   if (transciseState.isTranslating) return;
@@ -188,18 +191,73 @@ async function performTranslation() {
   try {
     transciseState.chunks = splitChunks(transciseState.markdownText);
     var tc = transciseState.chunks.filter(function(c) { return c.type === "text"; });
-    for (var i = 0; i < tc.length; i++) {
-      var ck = tc[i];
-      try {
-        var rs = await chrome.runtime.sendMessage({ type: "TRANSLATE", text: ck.text, targetLang: transciseState.targetLang, apiKey: transciseState.apiKey, model: transciseState.model });
-        if (rs && rs.success) transciseState.translations[ck.id] = rs.translation;
-      } catch(e) {}
-      updateProgress(i + 1, tc.length);
+    var completed = 0, total = tc.length;
+
+    if (total === 0) {
+      rebuildContent();
+      updateBtn("done");
+      transciseState.isTranslating = false;
+      return;
     }
-    rebuildContent(); transciseState.hasTranslation = true;
-    applyDisplayMode(transciseState.displayMode); updateBtn("done");
-  } catch(e) { updateBtn("error"); showTBError("翻译失败，点击重试"); }
-  finally { transciseState.isTranslating = false; }
+
+    // 并发队列：最多同时发送 3 个翻译请求
+    var CONCURRENCY = 3;
+    var queue = tc.slice(); // 工作队列
+    var errors = 0;
+
+    async function translateOne(chunk) {
+      try {
+        var rs = await chrome.runtime.sendMessage({
+          type: "TRANSLATE",
+          text: chunk.text,
+          targetLang: transciseState.targetLang,
+          apiKey: transciseState.apiKey,
+          model: transciseState.model
+        });
+        if (rs && rs.success) {
+          transciseState.translations[chunk.id] = rs.translation;
+        } else {
+          errors++;
+        }
+      } catch(e) {
+        errors++;
+      }
+      completed++;
+      updateProgress(completed, total);
+    }
+
+    // 启动 worker，从队列取任务并发执行
+    var workers = [];
+    var workerCount = Math.min(CONCURRENCY, total);
+    for (var w = 0; w < workerCount; w++) {
+      workers.push((async function worker() {
+        while (queue.length > 0) {
+          var chunk = queue.shift();
+          await translateOne(chunk);
+        }
+      })());
+    }
+    await Promise.all(workers);
+
+    rebuildContent();
+    transciseState.hasTranslation = true;
+    applyDisplayMode(transciseState.displayMode);
+
+    if (errors > 0 && errors < total) {
+      updateBtn("done");
+      showTBError("部分段落翻译失败 (" + errors + "/" + total + ")");
+    } else if (errors >= total) {
+      updateBtn("error");
+      showTBError("翻译失败，请重试");
+    } else {
+      updateBtn("done");
+    }
+  } catch(e) {
+    updateBtn("error");
+    showTBError("翻译失败，点击重试");
+  } finally {
+    transciseState.isTranslating = false;
+  }
 }
 
 function splitChunks(md) {
