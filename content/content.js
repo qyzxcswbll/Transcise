@@ -25,13 +25,43 @@ var state = transciseState;
 // ==================== 页面检测 ====================
 
 /**
+ * 已知的代码托管网站列表（这些网站会自行渲染 Markdown）
+ * 在这些网站上，扩展只对 raw 内容生效，跳过已渲染的页面
+ */
+var RENDERED_MD_HOSTS = [
+  'github.com', 'www.github.com',
+  'gitlab.com', 'www.gitlab.com',
+  'bitbucket.org', 'www.bitbucket.org',
+  'gitee.com', 'www.gitee.com',
+  'gitea.com', 'www.gitea.com'
+];
+
+/**
  * 检测当前页面是否为 Markdown 文件
  * 检查 URL 后缀，排除查询参数和 hash
+ * 额外检查是否为代码托管网站上的已渲染页面（如 GitHub README）
  * @returns {boolean}
  */
 function isMarkdownPage() {
   var url = window.location.href.toLowerCase().split('?')[0].split('#')[0];
-  return url.endsWith('.md');
+
+  // 必须是 .md 后缀
+  if (!url.endsWith('.md')) {
+    return false;
+  }
+
+  // 跳过代码托管网站的已渲染 Markdown 页面
+  // 这些网站上 .md 页面已被网站自身渲染为 HTML，不应二次处理
+  // 对于 raw.githubusercontent.com 等 raw 域名仍会正常触发
+  var hostname = window.location.hostname.toLowerCase();
+  for (var i = 0; i < RENDERED_MD_HOSTS.length; i++) {
+    if (hostname === RENDERED_MD_HOSTS[i] || hostname.endsWith('.' + RENDERED_MD_HOSTS[i])) {
+      console.log('[Transcise] 跳过已渲染的 Markdown 页面:', hostname);
+      return false;
+    }
+  }
+
+  return true;
 }
 
 /**

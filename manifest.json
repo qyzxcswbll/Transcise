@@ -19,10 +19,22 @@
             "matches": [
                 "*://*/*.md",
                 "*://*/*.md?*",
+                "*://*/*.md#*",
                 "file://*/*",
                 "file://*/*.md",
                 "file:///*/*.md",
-                "file:///*/*.md?*"
+                "file:///*/*.md?*",
+                "file:///*/*.md#*"
+            ],
+            "exclude_matches": [
+                "*://github.com/*",
+                "*://www.github.com/*",
+                "*://gitlab.com/*",
+                "*://www.gitlab.com/*",
+                "*://bitbucket.org/*",
+                "*://www.bitbucket.org/*",
+                "*://gitee.com/*",
+                "*://www.gitee.com/*"
             ],
             "js": [
                 "lib/marked.min.js",
