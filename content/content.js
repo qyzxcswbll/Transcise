@@ -307,6 +307,13 @@ function handleTranslationError(error) {
 async function initTranscise() {
   console.log('[Transcise] initTranscise() called');
 
+  // 检查自动触发开关（默认关闭）
+  var autoTrigger = await getStorageItem(STORAGE_KEYS.AUTO_TRIGGER, false);
+  if (!autoTrigger) {
+    console.log('[Transcise] 自动翻译已关闭，跳过此页面');
+    return;
+  }
+
   // 仅在 .md 页面上执行
   if (!isMarkdownPage()) {
     return;

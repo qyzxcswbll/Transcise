@@ -246,4 +246,52 @@ function updateProgress(d,t) { var st=document.getElementById("transcise-status"
 function showTBError(m) { var st=document.getElementById("transcise-status"); if(st) { st.textContent="✗ "+m; st.className="transcise-status status-error"; } }
 
 loadConfig();
+
+// 检查是否从 popup 传入的文件
+checkPopupFile();
+
 console.log("[Transcise Viewer] Ready");
+
+/**
+ * 检查是否有从 popup 传入的临时文件
+ * 读取后自动加载并渲染
+ */
+async function checkPopupFile() {
+  try {
+    var params = new URLSearchParams(window.location.search);
+    if (params.get("source") !== "popup") return;
+
+    var result = await chrome.storage.local.get("transcise_temp_file");
+    var fileData = result.transcise_temp_file;
+    if (!fileData || !fileData.content) return;
+
+    // 读取成功，清除临时存储
+    await chrome.storage.local.remove("transcise_temp_file");
+
+    // 加载文件内容
+    transciseState.markdownText = fileData.content;
+    if (!transciseState.markdownText.trim()) {
+      showError("文件内容为空");
+      return;
+    }
+
+    hideDropZone();
+    renderMarkdown(transciseState.markdownText);
+
+    // 在工具栏标题中显示文件名
+    if (fileData.fileName) {
+      var brand = document.querySelector(".transcise-brand");
+      if (brand) brand.textContent = "📄 " + fileData.fileName;
+    }
+
+    setTimeout(function () {
+      if (transciseState.apiKey) {
+        performTranslation();
+      } else {
+        showApiKeyPrompt();
+      }
+    }, 500);
+  } catch (e) {
+    console.error("[Transcise] 读取传入文件失败:", e);
+  }
+}

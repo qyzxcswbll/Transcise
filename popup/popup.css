@@ -1,5 +1,6 @@
 /**
- * Transcise Popup 配置面板样式
+ * Transcise Popup 主面板样式
+ * 文件上传区 + 设置区 + 自动触发开关
  */
 
 /* ==================== 基础重置 ==================== */
@@ -10,33 +11,32 @@
 }
 
 body {
-  width: 360px;
-  min-height: 400px;
+  width: 380px;
+  min-height: 480px;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   font-size: 14px;
   color: #24292e;
   background: #f6f8fa;
 }
 
-/* ==================== 容器 ==================== */
 .popup-container {
   display: flex;
   flex-direction: column;
-  min-height: 400px;
+  min-height: 480px;
 }
 
 /* ==================== 头部 ==================== */
 .popup-header {
   background: linear-gradient(135deg, #0366d6, #2188ff);
   color: #ffffff;
-  padding: 20px 24px;
+  padding: 16px 24px;
   text-align: center;
 }
 
 .popup-header h1 {
-  font-size: 22px;
+  font-size: 20px;
   font-weight: 700;
-  margin-bottom: 4px;
+  margin-bottom: 2px;
 }
 
 .popup-subtitle {
@@ -45,25 +45,233 @@ body {
   font-weight: 400;
 }
 
-/* ==================== 主体 ==================== */
-.popup-main {
-  flex: 1;
-  padding: 20px 24px;
+/* ==================== 文件上传区 ==================== */
+.upload-section {
+  padding: 16px 20px 12px;
+}
+
+.upload-area {
+  border: 2px dashed #c8d1da;
+  border-radius: 12px;
+  padding: 24px 16px;
+  text-align: center;
+  background: #ffffff;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s, transform 0.1s;
+}
+
+.upload-area:hover {
+  border-color: #0366d6;
+  background: #f0f6ff;
+}
+
+.upload-area.drag-over {
+  border-color: #0366d6;
+  background: #ddeeff;
+  transform: scale(1.02);
+}
+
+.upload-icon {
+  font-size: 40px;
+  margin-bottom: 8px;
+  line-height: 1;
+}
+
+.upload-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #24292e;
+  margin-bottom: 4px;
+}
+
+.upload-hint {
+  font-size: 12px;
+  color: #6a737d;
+  margin-bottom: 14px;
+}
+
+.upload-btn {
+  display: inline-block;
+  padding: 10px 24px;
+  background: #1f6feb;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.upload-btn:hover {
+  background: #0550ae;
+}
+
+.upload-btn:active {
+  transform: scale(0.97);
+}
+
+/* 上传状态 */
+.upload-status {
+  margin-top: 8px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 13px;
+  text-align: center;
+  font-weight: 500;
+}
+
+.upload-status.status-loading {
+  background: #f0f6ff;
+  color: #0366d6;
+}
+
+.upload-status.status-success {
+  background: #dafbe1;
+  color: #1a7f37;
+}
+
+.upload-status.status-error {
+  background: #ffebe9;
+  color: #cf222e;
+}
+
+/* ==================== 自动触发开关 ==================== */
+.toggle-section {
+  padding: 0 20px 12px;
+  border-bottom: 1px solid #e1e4e8;
+}
+
+.toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 0;
+}
+
+.toggle-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #24292e;
+}
+
+.toggle-icon {
+  font-size: 16px;
+}
+
+.toggle-hint {
+  font-size: 11px;
+  color: #6a737d;
+  margin-bottom: 6px;
+  line-height: 1.4;
+}
+
+/* 自定义 Toggle 开关 */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 24px;
+  flex-shrink: 0;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.switch-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: #d1d5da;
+  border-radius: 24px;
+  transition: background 0.2s;
+}
+
+.switch-slider::before {
+  content: "";
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  left: 3px;
+  bottom: 3px;
+  background: #ffffff;
+  border-radius: 50%;
+  transition: transform 0.2s;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+}
+
+.switch input:checked + .switch-slider {
+  background: #238636;
+}
+
+.switch input:checked + .switch-slider::before {
+  transform: translateX(20px);
+}
+
+.switch input:focus-visible + .switch-slider {
+  box-shadow: 0 0 0 3px rgba(3, 102, 214, 0.15);
+}
+
+/* ==================== 设置区（折叠） ==================== */
+.settings-details {
+  border-bottom: 1px solid #e1e4e8;
+}
+
+.settings-details[open] .settings-arrow {
+  transform: rotate(90deg);
+}
+
+.settings-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 20px;
+  cursor: pointer;
+  user-select: none;
+  font-size: 13px;
+  font-weight: 600;
+  color: #24292e;
+  list-style: none;
+  transition: background 0.15s;
+}
+
+.settings-summary:hover {
+  background: #f0f2f4;
+}
+
+.settings-summary::-webkit-details-marker {
+  display: none;
+}
+
+.settings-arrow {
+  font-size: 10px;
+  transition: transform 0.2s;
+  color: #6a737d;
+}
+
+.settings-body {
+  padding: 0 20px 16px;
 }
 
 /* ==================== 表单组 ==================== */
 .form-group {
-  margin-bottom: 20px;
+  margin-bottom: 16px;
 }
 
 .form-label {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
   color: #24292e;
-  margin-bottom: 6px;
+  margin-bottom: 5px;
 }
 
 .form-link {
@@ -72,6 +280,7 @@ body {
   color: #0366d6;
   text-decoration: none;
 }
+
 .form-link:hover {
   text-decoration: underline;
 }
@@ -82,6 +291,7 @@ body {
   color: #6a737d;
   margin-top: 4px;
 }
+
 .form-hint.status-success {
   color: #28a745;
   font-weight: 500;
@@ -99,19 +309,21 @@ body {
   transition: border-color 0.2s, box-shadow 0.2s;
   font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
 }
+
 .form-input:focus {
   border-color: #0366d6;
   box-shadow: 0 0 0 3px rgba(3, 102, 214, 0.15);
 }
+
 .form-input::placeholder {
   color: #959da5;
 }
 
-/* API Key 输入框带切换按钮 */
 .input-with-toggle {
   display: flex;
   gap: 4px;
 }
+
 .input-with-toggle .form-input {
   flex: 1;
 }
@@ -130,6 +342,7 @@ body {
   transition: background 0.2s;
   flex-shrink: 0;
 }
+
 .toggle-btn:hover {
   background: #f3f4f6;
 }
@@ -152,18 +365,13 @@ body {
   background-position: right 12px center;
   padding-right: 32px;
 }
+
 .form-select:focus {
   border-color: #0366d6;
   box-shadow: 0 0 0 3px rgba(3, 102, 214, 0.15);
 }
 
-/* ==================== 底部 ==================== */
-.popup-footer {
-  padding: 16px 24px 20px 24px;
-  border-top: 1px solid #e1e4e8;
-  text-align: center;
-}
-
+/* ==================== 保存按钮 ==================== */
 .save-btn {
   width: 100%;
   padding: 10px 20px;
@@ -176,12 +384,15 @@ body {
   cursor: pointer;
   transition: background 0.2s, transform 0.1s;
 }
+
 .save-btn:hover {
   background: #22863a;
 }
+
 .save-btn:active {
   transform: scale(0.98);
 }
+
 .save-btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
@@ -193,33 +404,23 @@ body {
   font-weight: 500;
   display: none;
 }
+
 .save-status.status-success {
   color: #28a745;
 }
+
 .save-status.status-error {
   color: #cb2431;
 }
 
-/* Viewer entry section */
-.popup-viewer-entry {
-  padding: 12px 24px;
-  border-bottom: 1px solid #e1e4e8;
+/* ==================== 底部 ==================== */
+.popup-footer {
+  padding: 10px 20px;
   text-align: center;
-  background: #f8fafc;
+  margin-top: auto;
 }
-.viewer-btn {
-  width: 100%;
-  padding: 10px 16px;
-  background: #1f6feb;
-  color: #fff;
-  border: 1px solid #1f6feb;
-  border-radius: 8px;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.15s;
-}
-.viewer-btn:hover { background: #0550ae; }
-.viewer-hint {
-  font-size: 11px; color: #656d76; margin-top: 6px;
+
+.footer-text {
+  font-size: 11px;
+  color: #8b949e;
 }

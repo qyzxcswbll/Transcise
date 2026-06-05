@@ -8,6 +8,7 @@ const STORAGE_KEYS = {
   API_KEY: 'transcise_api_key',           // DeepSeek API Key
   DEFAULT_LANG: 'transcise_default_lang', // 默认目标语言
   MODEL: 'transcise_model',               // 使用的模型名称
+  AUTO_TRIGGER: 'transcise_auto_trigger', // 自动触发开关
   TRANSLATION_CACHE: 'transcise_cache'    // 翻译缓存
 };
 
@@ -15,7 +16,8 @@ const STORAGE_KEYS = {
 const DEFAULTS = {
   [STORAGE_KEYS.DEFAULT_LANG]: 'zh',
   [STORAGE_KEYS.MODEL]: 'deepseek-chat',
-  [STORAGE_KEYS.API_KEY]: ''
+  [STORAGE_KEYS.API_KEY]: '',
+  [STORAGE_KEYS.AUTO_TRIGGER]: false
 };
 
 /**
