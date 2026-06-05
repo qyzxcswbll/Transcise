@@ -1,0 +1,66 @@
+{
+    "manifest_version": 3,
+    "name": "Transcise - Markdown Translator",
+    "version": "1.0.0",
+    "description": "在浏览器中渲染 Markdown 文件并使用 DeepSeek AI 进行翻译，支持双语对照和纯译文显示",
+    "author": "Transcise",
+    "permissions": [
+        "storage",
+        "activeTab"
+    ],
+    "host_permissions": [
+        "https://api.deepseek.com/*"
+    ],
+    "background": {
+        "service_worker": "background/service-worker.js"
+    },
+    "content_scripts": [
+        {
+            "matches": [
+                "*://*/*.md",
+                "*://*/*.md?*",
+                "file://*/*",
+                "file://*/*.md",
+                "file:///*/*.md",
+                "file:///*/*.md?*"
+            ],
+            "js": [
+                "lib/marked.min.js",
+                "utils/storage.js",
+                "utils/translator.js",
+                "content/content.js",
+                "content/toolbar.js"
+            ],
+            "css": [
+                "content/content.css"
+            ],
+            "run_at": "document_end"
+        }
+    ],
+    "action": {
+        "default_popup": "popup/popup.html",
+        "default_title": "Transcise - Markdown Translator",
+        "default_icon": {
+            "16": "icons/icon16.png",
+            "48": "icons/icon48.png",
+            "128": "icons/icon128.png"
+        }
+    },
+    "icons": {
+        "16": "icons/icon16.png",
+        "48": "icons/icon48.png",
+        "128": "icons/icon128.png"
+    },
+    "web_accessible_resources": [
+        {
+            "resources": [
+                "lib/*.js",
+                "content/*",
+                "viewer/*"
+            ],
+            "matches": [
+                "<all_urls>"
+            ]
+        }
+    ]
+}

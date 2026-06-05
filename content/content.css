@@ -1,0 +1,156 @@
+/* Transcise Content Styles */
+
+/* === Global Reset === */
+body { margin: 0 !important; padding: 0 !important; background: #f8f9fa !important; }
+
+/* === Markdown Content === */
+.transcise-markdown-body {
+  max-width: 900px; margin: 20px auto 40px auto; padding: 40px 60px;
+  background: #fff; border-radius: 8px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-size: 16px; line-height: 1.8; color: #24292e;
+}
+.transcise-markdown-body h1 { font-size:2em; border-bottom:1px solid #eaecef; padding-bottom:.3em; margin:24px 0 16px; }
+.transcise-markdown-body h2 { font-size:1.5em; border-bottom:1px solid #eaecef; padding-bottom:.3em; margin:24px 0 16px; }
+.transcise-markdown-body h3 { font-size:1.25em; margin:24px 0 16px; }
+.transcise-markdown-body h4 { font-size:1em; margin:24px 0 16px; }
+.transcise-markdown-body h5 { font-size:.875em; margin:24px 0 16px; }
+.transcise-markdown-body h6 { font-size:.85em; margin:24px 0 16px; color:#6a737d; }
+.transcise-markdown-body p { margin:0 0 16px; }
+.transcise-markdown-body a { color:#0366d6; text-decoration:none; }
+.transcise-markdown-body a:hover { text-decoration:underline; }
+.transcise-markdown-body pre { background:#f6f8fa; border-radius:6px; padding:16px; overflow-x:auto; font-family:"SFMono-Regular",Consolas,"Liberation Mono",Menlo,monospace; font-size:14px; line-height:1.45; margin-bottom:16px; }
+.transcise-markdown-body code { background:rgba(27,31,35,.05); border-radius:3px; padding:.2em .4em; font-family:"SFMono-Regular",Consolas,"Liberation Mono",Menlo,monospace; font-size:85%; }
+.transcise-markdown-body pre code { background:none; padding:0; font-size:100%; }
+.transcise-markdown-body blockquote { border-left:4px solid #dfe2e5; padding:0 15px; color:#6a737d; margin:0 0 16px; }
+.transcise-markdown-body ul, .transcise-markdown-body ol { padding-left:2em; margin-bottom:16px; }
+.transcise-markdown-body li+li { margin-top:.25em; }
+.transcise-markdown-body table { border-collapse:collapse; width:100%; margin-bottom:16px; }
+.transcise-markdown-body table th, .transcise-markdown-body table td { border:1px solid #dfe2e5; padding:6px 13px; }
+.transcise-markdown-body table th { background:#f6f8fa; font-weight:600; }
+.transcise-markdown-body table tr:nth-child(2n) { background:#f6f8fa; }
+.transcise-markdown-body img { max-width:100%; border-radius:4px; }
+.transcise-markdown-body hr { border:none; border-top:1px solid #eaecef; margin:24px 0; }
+
+/* === Translation Block === */
+.transcise-translation {
+  margin-bottom:16px; padding:12px 16px; background:#f0f7ff;
+  border-left:3px solid #0366d6; border-radius:4px; color:#1a3a5c;
+}
+
+/* === Display Modes === */
+.transcise-markdown-body.mode-translation > *:not(.transcise-translation) { display:none; }
+.transcise-markdown-body.mode-translation > .transcise-translation { display:block; }
+.transcise-markdown-body.mode-original > .transcise-translation { display:none; }
+
+/* === Toolbar === */
+.transcise-toolbar {
+  position:sticky; top:0; z-index:9999; background:#fff;
+  border-bottom:1px solid #e1e4e8; box-shadow:0 2px 8px rgba(0,0,0,.06);
+  font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+}
+.transcise-toolbar-inner { max-width:900px; margin:0 auto; padding:10px 20px; display:flex; align-items:center; gap:16px; flex-wrap:wrap; }
+.transcise-brand { font-weight:700; font-size:15px; color:#24292e; white-space:nowrap; user-select:none; }
+.transcise-controls { display:flex; align-items:center; gap:8px; flex:1; flex-wrap:wrap; }
+.transcise-select { padding:6px 12px; border:1px solid #d1d5da; border-radius:6px; background:#fff; font-size:13px; color:#24292e; cursor:pointer; outline:none; }
+.transcise-select:hover { border-color:#959da5; }
+.transcise-select:focus { border-color:#0366d6; box-shadow:0 0 0 3px rgba(3,102,214,.15); }
+.transcise-btn { padding:6px 16px; border:1px solid #d1d5da; border-radius:6px; background:#fff; font-size:13px; font-weight:500; color:#24292e; cursor:pointer; outline:none; white-space:nowrap; }
+.transcise-btn:hover { background:#f3f4f6; }
+.transcise-btn:disabled { opacity:.6; cursor:not-allowed; }
+.transcise-btn-primary { background:#0366d6; color:#fff; border-color:#0366d6; }
+.transcise-btn-primary:hover { background:#0256b9; }
+.transcise-btn.success { background:#28a745; border-color:#28a745; color:#fff; }
+.transcise-btn.error { background:#cb2431; border-color:#cb2431; color:#fff; }
+.transcise-btn.loading { position:relative; color:transparent!important; }
+.transcise-btn.loading::after { content:""; position:absolute; top:50%; left:50%; width:14px; height:14px; margin:-7px 0 0 -7px; border:2px solid transparent; border-top-color:currentColor; border-radius:50%; animation:transcise-spin .6s linear infinite; }
+@keyframes transcise-spin { to { transform:rotate(360deg); } }
+.transcise-mode-group { display:flex; border:1px solid #d1d5da; border-radius:6px; overflow:hidden; }
+.transcise-mode-btn { padding:6px 12px; border:none; border-right:1px solid #d1d5da; background:#fff; font-size:12px; color:#586069; cursor:pointer; }
+.transcise-mode-btn:last-child { border-right:none; }
+.transcise-mode-btn:hover { background:#f3f4f6; }
+.transcise-mode-btn.active { background:#0366d6; color:#fff; }
+.transcise-status { font-size:12px; color:#586069; white-space:nowrap; margin-left:auto; }
+.transcise-status.status-success { color:#28a745; font-weight:500; }
+.transcise-status.status-error { color:#cb2431; font-weight:500; }
+.transcise-status.status-loading { color:#0366d6; }
+.transcise-progress-bar { height:3px; background:#e1e4e8; overflow:hidden; }
+.transcise-progress-fill { height:100%; background:linear-gradient(90deg,#0366d6,#28a745); transition:width .3s ease; width:0; }
+
+/* === API Key Popup === */
+.transcise-popup-overlay {
+  position:fixed; inset:0; z-index:10000;
+  background:rgba(0,0,0,.08);
+  display:flex; align-items:flex-start; justify-content:center;
+  padding-top:56px;
+  animation:tk-overlay-in .2s ease;
+}
+@keyframes tk-overlay-in { from{opacity:0} to{opacity:1} }
+
+.transcise-popup-card {
+  position:relative; width:420px; max-width:94vw;
+  padding:20px 24px; background:#fff;
+  border:1px solid #d0d7de; border-radius:12px;
+  box-shadow:0 8px 24px rgba(0,0,0,.1), 0 0 0 1px rgba(3,102,214,.06);
+  animation:tk-popup-in .25s ease;
+}
+@keyframes tk-popup-in {
+  from{opacity:0;transform:translateY(-10px)}
+  to{opacity:1;transform:translateY(0)}
+}
+
+.transcise-popup-close {
+  position:absolute; top:10px; right:14px;
+  font-size:16px; color:#8b949e; cursor:pointer; line-height:1;
+}
+.transcise-popup-close:hover { color:#57606a; }
+
+.transcise-popup-header { display:flex; align-items:center; gap:10px; margin-bottom:14px; }
+.transcise-popup-icon-box {
+  width:36px; height:36px; border-radius:8px;
+  background:#ddf4ff; display:flex; align-items:center; justify-content:center;
+  font-size:17px; flex-shrink:0;
+}
+.transcise-popup-title { font-size:14px; font-weight:600; color:#0969da; }
+
+.transcise-popup-row { display:flex; gap:8px; }
+.transcise-popup-input {
+  flex:1; min-width:0; padding:9px 12px;
+  border:1.5px solid #d0d7de; border-radius:8px;
+  font-size:13px; font-family:"SFMono-Regular",Consolas,"Liberation Mono",Menlo,monospace;
+  color:#24292f; outline:none; background:#f6f8fa;
+}
+.transcise-popup-input:focus { border-color:#0969da; background:#fff; box-shadow:0 0 0 3px rgba(9,105,218,.1); }
+.transcise-popup-input::placeholder { color:#8b949e; font-size:12px; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; }
+.transcise-popup-input.input-error { border-color:#cf222e; box-shadow:0 0 0 3px rgba(207,34,46,.08); }
+
+.transcise-popup-btn {
+  padding:9px 20px; background:#0969da; color:#fff; border:none; border-radius:8px;
+  font-size:13px; font-weight:500; cursor:pointer; white-space:nowrap;
+}
+.transcise-popup-btn:hover { background:#0550ae; }
+.transcise-popup-btn:disabled { opacity:.5; cursor:not-allowed; }
+
+.transcise-popup-status { display:block; font-size:11px; margin-top:6px; min-height:16px; line-height:16px; }
+.transcise-popup-status.status-error { color:#cf222e; }
+.transcise-popup-status.status-success { color:#1a7f37; font-weight:500; }
+.transcise-popup-status.status-loading { color:#0969da; }
+
+.transcise-popup-footer { margin-top:12px; display:flex; align-items:center; gap:16px; }
+.transcise-popup-footer a { font-size:11px; color:#656d76; text-decoration:none; }
+.transcise-popup-footer a:hover { color:#0969da; text-decoration:underline; }
+.transcise-popup-hint { font-size:11px; color:#8b949e; }
+
+/* === Responsive === */
+@media (max-width:768px) {
+  .transcise-markdown-body { margin:10px; padding:20px 24px; border-radius:4px; }
+  .transcise-toolbar-inner { padding:8px 12px; gap:8px; }
+  .transcise-controls { width:100%; }
+  .transcise-status { margin-left:0; width:100%; text-align:center; }
+}
+@media (max-width:500px) {
+  .transcise-popup-card { width:94vw; padding:18px; }
+  .transcise-popup-row { flex-direction:column; }
+  .transcise-popup-btn { width:100%; text-align:center; }
+}

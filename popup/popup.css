@@ -1,0 +1,225 @@
+/**
+ * Transcise Popup 配置面板样式
+ */
+
+/* ==================== 基础重置 ==================== */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  width: 360px;
+  min-height: 400px;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-size: 14px;
+  color: #24292e;
+  background: #f6f8fa;
+}
+
+/* ==================== 容器 ==================== */
+.popup-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 400px;
+}
+
+/* ==================== 头部 ==================== */
+.popup-header {
+  background: linear-gradient(135deg, #0366d6, #2188ff);
+  color: #ffffff;
+  padding: 20px 24px;
+  text-align: center;
+}
+
+.popup-header h1 {
+  font-size: 22px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.popup-subtitle {
+  font-size: 12px;
+  opacity: 0.85;
+  font-weight: 400;
+}
+
+/* ==================== 主体 ==================== */
+.popup-main {
+  flex: 1;
+  padding: 20px 24px;
+}
+
+/* ==================== 表单组 ==================== */
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  font-weight: 600;
+  color: #24292e;
+  margin-bottom: 6px;
+}
+
+.form-link {
+  font-size: 11px;
+  font-weight: 400;
+  color: #0366d6;
+  text-decoration: none;
+}
+.form-link:hover {
+  text-decoration: underline;
+}
+
+.form-hint {
+  display: block;
+  font-size: 11px;
+  color: #6a737d;
+  margin-top: 4px;
+}
+.form-hint.status-success {
+  color: #28a745;
+  font-weight: 500;
+}
+
+/* ==================== 输入框 ==================== */
+.form-input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #d1d5da;
+  border-radius: 6px;
+  font-size: 13px;
+  color: #24292e;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+}
+.form-input:focus {
+  border-color: #0366d6;
+  box-shadow: 0 0 0 3px rgba(3, 102, 214, 0.15);
+}
+.form-input::placeholder {
+  color: #959da5;
+}
+
+/* API Key 输入框带切换按钮 */
+.input-with-toggle {
+  display: flex;
+  gap: 4px;
+}
+.input-with-toggle .form-input {
+  flex: 1;
+}
+
+.toggle-btn {
+  width: 36px;
+  height: 36px;
+  border: 1px solid #d1d5da;
+  border-radius: 6px;
+  background: #ffffff;
+  cursor: pointer;
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s;
+  flex-shrink: 0;
+}
+.toggle-btn:hover {
+  background: #f3f4f6;
+}
+
+/* ==================== 选择框 ==================== */
+.form-select {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #d1d5da;
+  border-radius: 6px;
+  font-size: 13px;
+  color: #24292e;
+  background: #ffffff;
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23586069' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 32px;
+}
+.form-select:focus {
+  border-color: #0366d6;
+  box-shadow: 0 0 0 3px rgba(3, 102, 214, 0.15);
+}
+
+/* ==================== 底部 ==================== */
+.popup-footer {
+  padding: 16px 24px 20px 24px;
+  border-top: 1px solid #e1e4e8;
+  text-align: center;
+}
+
+.save-btn {
+  width: 100%;
+  padding: 10px 20px;
+  background: #28a745;
+  color: #ffffff;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s;
+}
+.save-btn:hover {
+  background: #22863a;
+}
+.save-btn:active {
+  transform: scale(0.98);
+}
+.save-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.save-status {
+  margin-top: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  display: none;
+}
+.save-status.status-success {
+  color: #28a745;
+}
+.save-status.status-error {
+  color: #cb2431;
+}
+
+/* Viewer entry section */
+.popup-viewer-entry {
+  padding: 12px 24px;
+  border-bottom: 1px solid #e1e4e8;
+  text-align: center;
+  background: #f8fafc;
+}
+.viewer-btn {
+  width: 100%;
+  padding: 10px 16px;
+  background: #1f6feb;
+  color: #fff;
+  border: 1px solid #1f6feb;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.viewer-btn:hover { background: #0550ae; }
+.viewer-hint {
+  font-size: 11px; color: #656d76; margin-top: 6px;
+}

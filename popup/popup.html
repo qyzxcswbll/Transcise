@@ -1,0 +1,65 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Transcise - 设置</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="popup-container">
+    <header class="popup-header">
+      <h1>🌐 Transcise</h1>
+      <p class="popup-subtitle">Markdown 翻译助手</p>
+    </header>
+    <div class="popup-viewer-entry">
+      <button id="open-viewer" class="viewer-btn">📂 Open Local Markdown File</button>
+      <p class="viewer-hint">Drag &amp; drop .md files, or browse to open</p>
+    </div>
+    <main class="popup-main">
+      <div class="form-group">
+        <label for="api-key" class="form-label">DeepSeek API Key
+          <a href="https://platform.deepseek.com/api_keys" target="_blank" class="form-link">获取 Key →</a>
+        </label>
+        <div class="input-with-toggle">
+          <input type="password" id="api-key" class="form-input" placeholder="sk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" autocomplete="off">
+          <button type="button" id="toggle-key-visibility" class="toggle-btn" title="显示/隐藏 API Key">👁️</button>
+        </div>
+        <span id="api-key-status" class="form-hint"></span>
+      </div>
+      <div class="form-group">
+        <label for="default-lang" class="form-label">默认翻译目标语言</label>
+        <select id="default-lang" class="form-select">
+          <option value="zh">🇨🇳 中文</option>
+          <option value="en">🇺🇸 English</option>
+          <option value="ja">🇯🇵 日本語</option>
+          <option value="ko">🇰🇷 한국어</option>
+          <option value="fr">🇫🇷 Français</option>
+          <option value="de">🇩🇪 Deutsch</option>
+          <option value="es">🇪🇸 Español</option>
+          <option value="ru">🇷🇺 Русский</option>
+          <option value="pt">🇧🇷 Português</option>
+          <option value="it">🇮🇹 Italiano</option>
+          <option value="vi">🇻🇳 Tiếng Việt</option>
+          <option value="th">🇹🇭 ภาษาไทย</option>
+          <option value="id">🇮🇩 Bahasa Indonesia</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="model-select" class="form-label">翻译模型</label>
+        <select id="model-select" class="form-select">
+          <option value="deepseek-chat">DeepSeek-V3 (推荐)</option>
+          <option value="deepseek-reasoner">DeepSeek-R1</option>
+        </select>
+        <span class="form-hint">DeepSeek-V3 速度更快，R1 翻译质量更精细</span>
+      </div>
+    </main>
+    <footer class="popup-footer">
+      <button type="button" id="save-btn" class="save-btn">💾 保存设置</button>
+      <div id="save-status" class="save-status"></div>
+    </footer>
+  </div>
+  <script src="../utils/storage.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>
