@@ -42,10 +42,8 @@ function handleFile(file) {
     transciseState.markdownText = e.target.result;
     if (!transciseState.markdownText.trim()) { showError("文件为空"); return; }
     hideDropZone(); renderMarkdown(transciseState.markdownText);
-    setTimeout(function() {
-      if (transciseState.apiKey) { performTranslation(); }
-      else { showApiKeyPrompt(); }
-    }, 500);
+    // 预览模式：仅渲染 Markdown，不自动翻译
+    // 用户点击 "翻译" 按钮时再执行翻译
   };
   r.onerror = function() { showError("读取文件失败"); };
   r.readAsText(file);
@@ -75,6 +73,12 @@ function renderMarkdown(md) {
   } catch(e) {
     h = "<pre>Render error: " + e.message + "</pre>";
   }
+
+  // 将 <pre><code class="language-mermaid"> 替换为 <div class="mermaid">
+  // 以便 Mermaid 库能识别并渲染流程图
+  h = h.replace(/<pre><code class="language-mermaid">/gi, '<div class="mermaid">');
+  h = h.replace(/<\/code><\/pre>/gi, '</div>');
+
   target.innerHTML = "";
   var c = document.createElement("div");
   c.id = "transcise-content-container";
@@ -83,6 +87,26 @@ function renderMarkdown(md) {
   c.innerHTML = h;
   target.appendChild(c);
   injectToolbar();
+
+  // 渲染 Mermaid 流程图
+  renderMermaid();
+  // 显示预览模式状态
+  var st = document.getElementById("transcise-status");
+  if (st) { st.textContent = "📖 预览"; st.className = "transcise-status"; }
+}
+
+/**
+ * 渲染 Mermaid 流程图
+ * 查找所有 .mermaid 元素并调用 Mermaid 库绘制 SVG
+ */
+function renderMermaid() {
+  if (typeof mermaid === "undefined") return;
+  var els = document.querySelectorAll(".mermaid");
+  if (els.length === 0) return;
+  mermaid.initialize({ startOnLoad: false, theme: "neutral" });
+  mermaid.run({ nodes: els }).catch(function(e) {
+    console.error("[Transcise] Mermaid render error:", e);
+  });
 }
 
 function injectToolbar() {
@@ -343,12 +367,9 @@ async function checkPopupFile() {
     }
 
     setTimeout(function () {
-      if (transciseState.apiKey) {
-        performTranslation();
-      } else {
-        showApiKeyPrompt();
-      }
-    }, 500);
+      // 预览模式：仅渲染 Markdown，不自动翻译
+      // 用户点击 "翻译" 按钮时再执行翻译
+    }, 100);
   } catch (e) {
     console.error("[Transcise] 读取传入文件失败:", e);
   }
