@@ -37,6 +37,26 @@
       z-index: 100;
     }
     .settings-link:hover { background: #30363d; color: #f0f6fc; }
+
+    /* 预览/翻译切换按钮组 */
+    .transcise-view-toggle { display: flex; border: 1px solid #d1d5da; border-radius: 6px; overflow: hidden; }
+    .transcise-view-toggle .transcise-mode-btn {
+      padding: 6px 12px; border: none; border-right: 1px solid #d1d5da;
+      background: #fff; font-size: 12px; color: #586069; cursor: pointer;
+    }
+    .transcise-view-toggle .transcise-mode-btn:last-child { border-right: none; }
+    .transcise-view-toggle .transcise-mode-btn:hover { background: #f3f4f6; }
+    .transcise-view-toggle .transcise-mode-btn.active { background: #0366d6; color: #fff; }
+
+    /* 显示模式按钮禁用态 */
+    .transcise-mode-btn.disabled { opacity: 0.5; cursor: not-allowed !important; pointer-events: none; }
+
+    /* 预览模式：隐藏译文内容 */
+    .transcise-markdown-body.view-preview .transcise-translation { display: none; }
+
+    /* Mermaid SVG 响应式：防止流程图溢出变窄 */
+    .transcise-markdown-body .mermaid { overflow-x: auto; }
+    .transcise-markdown-body .mermaid svg { max-width: 100%; height: auto; }
   </style>
 </head>
 <body>

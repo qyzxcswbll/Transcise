@@ -4,7 +4,8 @@
 var transciseState = {
   markdownText: "", chunks: [], translations: {},
   targetLang: "zh", apiKey: "", displayMode: "both",
-  isTranslating: false, hasTranslation: false
+  isTranslating: false, hasTranslation: false,
+  viewMode: "preview"   // "preview" | "translate"
 };
 
 var dropZone = document.getElementById("drop-zone");
@@ -113,16 +114,15 @@ function renderMarkdown(md) {
   var c = document.createElement("div");
   c.id = "transcise-content-container";
   c.className = "transcise-markdown-body";
-  c.style.margin = "60px auto 40px auto";
+  c.style.cssText = "max-width:1100px;margin:60px auto 40px auto;";
   c.innerHTML = h;
   target.appendChild(c);
   injectToolbar();
 
   // 渲染 Mermaid 流程图
   renderMermaid();
-  // 显示预览模式状态
-  var st = document.getElementById("transcise-status");
-  if (st) { st.textContent = "📖 预览"; st.className = "transcise-status"; }
+  // 初始为预览模式
+  transciseState.viewMode = "preview";
 }
 
 /**
@@ -156,20 +156,28 @@ function injectToolbar() {
     "<option value=pt>Português</option><option value=it>Italiano</option>" +
     "<option value=vi>Tiếng Việt</option><option value=th>ภาษาไทย</option>" +
     "<option value=id>Bahasa Indonesia</option></select>" +
-    "<button id=transcise-translate-btn class='transcise-btn transcise-btn-primary'>翻译</button>" +
-    "<div class=transcise-mode-group>" +
-    "<button class='transcise-mode-btn active' data-mode=both>双语</button>" +
-    "<button class=transcise-mode-btn data-mode=translation>仅译文</button>" +
-    "<button class=transcise-mode-btn data-mode=original>仅原文</button></div></div>" +
+    "<div class=transcise-view-toggle>" +
+    "<button id=transcise-preview-btn class='transcise-mode-btn active' data-view=preview>📖 预览</button>" +
+    "<button id=transcise-translate-btn class='transcise-mode-btn' data-view=translate>🌐 翻译</button></div>" +
+    "<div class=transcise-mode-group id=transcise-mode-group>" +
+    "<button class='transcise-mode-btn disabled' data-mode=both disabled>双语</button>" +
+    "<button class='transcise-mode-btn disabled' data-mode=translation disabled>仅译文</button>" +
+    "<button class='transcise-mode-btn disabled' data-mode=original disabled>仅原文</button></div></div>" +
     "<span id=transcise-status class=transcise-status></span></div>" +
     "<div id=transcise-progress-bar class=transcise-progress-bar style=display:none>" +
     "<div id=transcise-progress-fill class=transcise-progress-fill></div></div>";
   document.body.insertBefore(t, document.body.firstChild);
-  var b = document.getElementById("transcise-translate-btn");
-  if (b) b.addEventListener("click", function() { if (!transciseState.isTranslating) performTranslation(); });
+  document.getElementById("transcise-preview-btn").addEventListener("click", function() { switchViewMode("preview"); });
+  document.getElementById("transcise-translate-btn").addEventListener("click", function() { switchViewMode("translate"); });
   var s = document.getElementById("transcise-lang-select");
   if (s) { s.value = transciseState.targetLang; s.addEventListener("change", function(e) { transciseState.targetLang = e.target.value; try { chrome.storage.sync.set({ transcise_default_lang: e.target.value }); } catch(ex) {} }); }
-  document.querySelectorAll(".transcise-mode-btn").forEach(function(b) { b.addEventListener("click", function() { applyDisplayMode(this.getAttribute("data-mode")); }); });
+  // 显示模式按钮点击：只对非 disabled 的按钮生效
+  document.querySelectorAll("#transcise-mode-group .transcise-mode-btn").forEach(function(b) {
+    b.addEventListener("click", function() {
+      if (this.disabled) return;
+      applyDisplayMode(this.getAttribute("data-mode"));
+    });
+  });
 }
 
 function showApiKeyPrompt() {
@@ -236,6 +244,59 @@ function dismissApiKeyPrompt() {
 }
 
 /**
+ * 切换预览/翻译模式
+ * 预览模式：显示渲染后的 Markdown，不显示译文，显示模式按钮禁用
+ * 翻译模式：显示译文（或触发翻译），显示模式按钮可用
+ */
+function switchViewMode(mode) {
+  if (mode === transciseState.viewMode || !document.getElementById("transcise-content-container")) return;
+  transciseState.viewMode = mode;
+
+  var previewBtn = document.getElementById("transcise-preview-btn");
+  var translateBtn = document.getElementById("transcise-translate-btn");
+  var modeGroup = document.getElementById("transcise-mode-group");
+  var container = document.getElementById("transcise-content-container");
+
+  if (mode === "preview") {
+    // 预览模式：切换按钮状态，禁用显示模式，隐藏译文
+    if (previewBtn) previewBtn.classList.add("active");
+    if (translateBtn) translateBtn.classList.remove("active");
+    if (modeGroup) {
+      modeGroup.querySelectorAll(".transcise-mode-btn").forEach(function(b) {
+        b.classList.add("disabled");
+        b.disabled = true;
+      });
+    }
+    if (container) container.classList.add("view-preview");
+    var st = document.getElementById("transcise-status");
+    if (st) { st.textContent = "📖 预览"; st.className = "transcise-status"; }
+  } else {
+    // 翻译模式：切换按钮状态，启用显示模式，显示译文
+    if (previewBtn) previewBtn.classList.remove("active");
+    if (translateBtn) translateBtn.classList.add("active");
+    if (modeGroup) {
+      modeGroup.querySelectorAll(".transcise-mode-btn").forEach(function(b) {
+        b.classList.remove("disabled");
+        b.disabled = false;
+      });
+    }
+    if (container) container.classList.remove("view-preview");
+
+    if (transciseState.hasTranslation) {
+      // 已有译文，直接切换显示模式
+      applyDisplayMode(transciseState.displayMode);
+      var st = document.getElementById("transcise-status");
+      if (st) { st.textContent = "✔ 翻译完成"; st.className = "transcise-status status-success"; }
+    } else {
+      // 无译文，开始翻译
+      var st = document.getElementById("transcise-status");
+      if (st) { st.textContent = ""; st.className = "transcise-status"; }
+      performTranslation();
+    }
+  }
+}
+
+/**
  * 并发翻译：支持同时发起多个请求，大幅提升翻译速度
  */
 async function performTranslation() {
@@ -296,6 +357,20 @@ async function performTranslation() {
     rebuildContent();
     transciseState.hasTranslation = true;
     applyDisplayMode(transciseState.displayMode);
+
+    // 翻译完成后自动切换到翻译模式（启用显示模式按钮）
+    transciseState.viewMode = "translate";
+    var previewBtn = document.getElementById("transcise-preview-btn");
+    var translateBtn = document.getElementById("transcise-translate-btn");
+    var modeGroup = document.getElementById("transcise-mode-group");
+    if (previewBtn) previewBtn.classList.remove("active");
+    if (translateBtn) translateBtn.classList.add("active");
+    if (modeGroup) {
+      modeGroup.querySelectorAll(".transcise-mode-btn").forEach(function(b) {
+        b.classList.remove("disabled");
+        b.disabled = false;
+      });
+    }
 
     if (errors > 0 && errors < total) {
       updateBtn("done");
