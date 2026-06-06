@@ -105,19 +105,27 @@ function renderMarkdown(md) {
     h = "<pre>Render error: " + e.message + "</pre>";
   }
 
-  // 将 <pre><code class="language-mermaid"> 替换为 <div class="mermaid">
-  // 以便 Mermaid 库能识别并渲染流程图
-  h = h.replace(/<pre><code class="language-mermaid">/gi, '<div class="mermaid">');
-  h = h.replace(/<\/code><\/pre>/gi, '</div>');
+  // 将完整的 Mermaid 代码块 <pre><code class="language-mermaid">...</code></pre>
+  // 替换为 <div class="mermaid">...</div>，供 Mermaid 库渲染流程图
+  // 注意：必须用单个正则替换整个块，不能分两步全局替换
+  // 否则 "</code></pre>" 的全局替换会误伤所有普通代码块，导致 HTML 结构损坏
+  h = h.replace(/<pre><code class="language-mermaid">([\s\S]*?)<\/code><\/pre>/gi, '<div class="mermaid">$1</div>');
 
   target.innerHTML = "";
   var c = document.createElement("div");
   c.id = "transcise-content-container";
   c.className = "transcise-markdown-body";
-  c.style.cssText = "max-width:1100px;margin:60px auto 40px auto;";
+  c.style.maxWidth = "95vw";
+  c.style.margin = "60px auto 40px auto";
+  c.style.padding = "40px 48px";
+  c.style.width = "100%";
+  c.style.boxSizing = "border-box";
   c.innerHTML = h;
   target.appendChild(c);
   injectToolbar();
+
+  // 诊断：输出所有 <pre> 的计算宽度，用于排查漏斗变窄问题
+  diagnoseLayout();
 
   // 渲染 Mermaid 流程图
   renderMermaid();
@@ -490,5 +498,76 @@ async function checkPopupFile() {
     }, 100);
   } catch (e) {
     console.error("[Transcise] 读取传入文件失败:", e);
+  }
+}
+
+/**
+ * 诊断函数：输出容器和所有 <pre> 的计算宽度到控制台
+ * 用于排查漏斗变窄问题 — 打开 F12 > Console 查看数据
+ */
+function diagnoseLayout() {
+  var container = document.getElementById("transcise-content-container");
+  if (!container) { console.warn("[Diagnose] 容器未找到"); return; }
+  var cr = container.getBoundingClientRect();
+  var cs = getComputedStyle(container);
+  var data = [{
+    tag: "CONTAINER",
+    index: "-",
+    rectWidth: Math.round(cr.width),
+    offsetWidth: container.offsetWidth,
+    scrollWidth: container.scrollWidth,
+    overflowX: cs.overflowX,
+    overflowY: cs.overflowY,
+    boxSizing: cs.boxSizing,
+    padding: cs.padding,
+    maxWidth: cs.maxWidth
+  }];
+  var pres = container.querySelectorAll("pre");
+  pres.forEach(function(pre, i) {
+    var r = pre.getBoundingClientRect();
+    var s = getComputedStyle(pre);
+    data.push({
+      tag: "PRE",
+      index: i,
+      rectWidth: Math.round(r.width),
+      offsetWidth: pre.offsetWidth,
+      scrollWidth: pre.scrollWidth,
+      overflowX: s.overflowX,
+      overflowY: s.overflowY,
+      boxSizing: s.boxSizing,
+      padding: s.padding,
+      maxWidth: s.maxWidth
+    });
+  });
+  console.table(data);
+  // 检查是否有 <pre> 的 scrollWidth > offsetWidth（水平溢出）
+  var overflows = pres.filter(function(p) { return p.scrollWidth > p.offsetWidth; });
+  if (overflows.length > 0) {
+    console.warn("[Diagnose] 以下 <pre> 存在水平溢出（scrollWidth > offsetWidth）:", overflows.length, "个");
+  }
+  // 检查第一个和最后一个 <pre> 的宽度差异
+  if (pres.length >= 2) {
+    var first = pres[0].getBoundingClientRect().width;
+    var last = pres[pres.length - 1].getBoundingClientRect().width;
+    if (last < first) {
+      console.warn("[Diagnose] 最后一个 <pre> 比第一个窄了", Math.round(first - last), "px");
+    }
+  }
+  // DOM 结构检查：是否有 <pre> 嵌套？
+  var nested = 0;
+  pres.forEach(function(pre, i) {
+    var children = pre.querySelectorAll("pre");
+    if (children.length > 0) {
+      nested++;
+      console.warn("[Diagnose] PRE[" + i + "] 内部包含", children.length, "个子 <pre> —— DOM 结构异常嵌套!");
+    }
+  });
+  if (nested === 0) {
+    // 即使没有嵌套，检查父元素链
+    console.log("[Diagnose] DOM 结构检查：无 <pre> 嵌套。检查前 5 个 <pre> 的父元素:");
+    for (var i = 0; i < Math.min(5, pres.length); i++) {
+      var p = pres[i].parentElement;
+      console.log("  PRE[" + i + "] 父节点:", p ? p.tagName + (p.id ? "#" + p.id : "") + (p.className ? "." + p.className : "") : "null");
+    }
   }
 }

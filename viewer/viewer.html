@@ -57,6 +57,10 @@
     /* Mermaid SVG 响应式：防止流程图溢出变窄 */
     .transcise-markdown-body .mermaid { overflow-x: auto; }
     .transcise-markdown-body .mermaid svg { max-width: 100%; height: auto; }
+
+    /* 代码块自动换行：防止长 URL 或路径被截断 */
+    .transcise-markdown-body pre { white-space: pre-wrap; word-break: break-word; }
+    .transcise-markdown-body code { word-break: break-word; }
   </style>
 </head>
 <body>
