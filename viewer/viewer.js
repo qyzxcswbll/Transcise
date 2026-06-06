@@ -5,8 +5,17 @@ var transciseState = {
   markdownText: "", chunks: [], translations: {},
   targetLang: "zh", apiKey: "", displayMode: "both",
   isTranslating: false, hasTranslation: false,
-  viewMode: "preview"   // "preview" | "translate"
+  translatedLang: "",      // 上次翻译时使用的目标语言
+  viewMode: "preview",     // "preview" | "translate"
+  translatedIds: {},       // { chunkId: true } 已翻译的 text chunk
+  pendingTextChunks: [],   // 等待翻译的 text chunk 列表
+  scrollHandler: null,     // scroll 事件监听器引用
+  originalHtml: ""         // 初始 rendered 的 HTML（仅原文模式恢复用）
 };
+
+var LAZY_INITIAL_CHUNKS = 20;    // 首批翻译的 text chunk 数量（≈ 首批页数）
+var LAZY_BATCH_CHUNKS = 10;      // 后续滚动触发的每批 chunk 数
+var SCROLL_TRIGGER_MARGIN = 1.5; // 距底部多少屏时触发下一批
 
 var dropZone = document.getElementById("drop-zone");
 var fileInput = document.getElementById("file-input");
@@ -44,6 +53,13 @@ function resetViewer() {
   transciseState.translations = {};
   transciseState.isTranslating = false;
   transciseState.hasTranslation = false;
+  transciseState.translatedLang = "";
+  transciseState.originalHtml = "";
+  transciseState._chunkHtml = null;
+  // 清除懒加载状态
+  transciseState.translatedIds = {};
+  transciseState.pendingTextChunks = [];
+  cleanupScrollTrigger();
 
   // 清除旧工具栏
   var oldToolbar = document.getElementById("transcise-toolbar");
@@ -122,10 +138,12 @@ function renderMarkdown(md) {
   c.style.boxSizing = "border-box";
   c.innerHTML = h;
   target.appendChild(c);
+  // 保存初始渲染的 HTML，供「仅原文」模式恢复（与拖入时效果一致）
+  transciseState.originalHtml = c.innerHTML;
   injectToolbar();
 
   // 诊断：输出所有 <pre> 的计算宽度，用于排查漏斗变窄问题
-  diagnoseLayout();
+  try { diagnoseLayout(); } catch(e) { console.warn("[Diagnose] error:", e); }
 
   // 渲染 Mermaid 流程图
   renderMermaid();
@@ -257,7 +275,8 @@ function dismissApiKeyPrompt() {
  * 翻译模式：显示译文（或触发翻译），显示模式按钮可用
  */
 function switchViewMode(mode) {
-  if (mode === transciseState.viewMode || !document.getElementById("transcise-content-container")) return;
+  // 只检查容器存在，不移除 mode 同值 guard——允许重复点击翻译按钮触发语言变更检查
+  if (!document.getElementById("transcise-content-container")) return;
   transciseState.viewMode = mode;
 
   var previewBtn = document.getElementById("transcise-preview-btn");
@@ -273,9 +292,14 @@ function switchViewMode(mode) {
       modeGroup.querySelectorAll(".transcise-mode-btn").forEach(function(b) {
         b.classList.add("disabled");
         b.disabled = true;
+        b.classList.remove("active");  // 清除模式按钮选中态
       });
     }
-    if (container) container.classList.add("view-preview");
+    if (container) {
+      // 清除所有显示模式类，防止与 view-preview 冲突（如 mode-translation 隐藏非译文）
+      container.classList.remove("mode-both", "mode-translation", "mode-original");
+      container.classList.add("view-preview");
+    }
     var st = document.getElementById("transcise-status");
     if (st) { st.textContent = "📖 预览"; st.className = "transcise-status"; }
   } else {
@@ -291,10 +315,22 @@ function switchViewMode(mode) {
     if (container) container.classList.remove("view-preview");
 
     if (transciseState.hasTranslation) {
-      // 已有译文，直接切换显示模式
-      applyDisplayMode(transciseState.displayMode);
-      var st = document.getElementById("transcise-status");
-      if (st) { st.textContent = "✔ 翻译完成"; st.className = "transcise-status status-success"; }
+      // 如果目标语言变了，清空旧译文重新翻译
+      if (transciseState.translatedLang && transciseState.translatedLang !== transciseState.targetLang) {
+        transciseState.translations = {};
+        transciseState.translatedIds = {};
+        transciseState.pendingTextChunks = [];
+        transciseState.hasTranslation = false;
+        cleanupScrollTrigger();
+        var st = document.getElementById("transcise-status");
+        if (st) { st.textContent = ""; st.className = "transcise-status"; }
+        performTranslation();
+      } else {
+        // 同语言，直接切换显示模式
+        applyDisplayMode(transciseState.displayMode);
+        var st = document.getElementById("transcise-status");
+        if (st) { st.textContent = "✔ 翻译完成"; st.className = "transcise-status status-success"; }
+      }
     } else {
       // 无译文，开始翻译
       var st = document.getElementById("transcise-status");
@@ -305,7 +341,7 @@ function switchViewMode(mode) {
 }
 
 /**
- * 并发翻译：支持同时发起多个请求，大幅提升翻译速度
+ * 并发翻译：支持分步懒加载，首次只译约 10 页，滚动触发后续批次
  */
 async function performTranslation() {
   if (!transciseState.apiKey) { showApiKeyPrompt(); return; }
@@ -313,8 +349,8 @@ async function performTranslation() {
   transciseState.isTranslating = true; updateBtn("loading");
   try {
     transciseState.chunks = splitChunks(transciseState.markdownText);
-    var tc = transciseState.chunks.filter(function(c) { return c.type === "text"; });
-    var completed = 0, total = tc.length;
+    var allText = transciseState.chunks.filter(function(c) { return c.type === "text"; });
+    var total = allText.length;
 
     if (total === 0) {
       rebuildContent();
@@ -323,10 +359,27 @@ async function performTranslation() {
       return;
     }
 
-    // 并发队列：最多同时发送 3 个翻译请求
-    var CONCURRENCY = 3;
-    var queue = tc.slice(); // 工作队列
+    // 找出尚未翻译的 text chunk
+    var untranslated = allText.filter(function(c) { return !transciseState.translatedIds[c.id]; });
+    if (untranslated.length === 0) {
+      // 全部已翻译
+      finishTranslation();
+      return;
+    }
+
+    // 确定本次要翻译的批次（用 chunk 数量控制，比字符数更可预测）
+    var isFirstBatch = Object.keys(transciseState.translatedIds).length === 0;
+    var batchSize = isFirstBatch ? LAZY_INITIAL_CHUNKS : LAZY_BATCH_CHUNKS;
+    var batch = untranslated.slice(0, batchSize);
+
+    // 更新剩余待译队列
+    transciseState.pendingTextChunks = untranslated.slice(batchSize);
+
+    // 首批翻译显示批次进度（不显示全局总数，防止误解为全量翻译）
+    var batchTotal = batch.length;
+    var batchDone = 0;
     var errors = 0;
+    var CONCURRENCY = 3;
 
     async function translateOne(chunk) {
       try {
@@ -339,55 +392,81 @@ async function performTranslation() {
         });
         if (rs && rs.success) {
           transciseState.translations[chunk.id] = rs.translation;
+          transciseState.translatedIds[chunk.id] = true;
         } else {
           errors++;
         }
       } catch(e) {
         errors++;
       }
-      completed++;
-      updateProgress(completed, total);
+      batchDone++;
+      if (isFirstBatch) {
+        // 首批：简短进度文字，防止撑高导航栏
+        var st = document.getElementById("transcise-status");
+        var pf = document.getElementById("transcise-progress-fill");
+        if (st) { st.textContent = "翻译中 " + batchDone + "/" + batchTotal; st.className = "transcise-status status-loading"; }
+        if (pf) pf.style.width = Math.round(batchDone / batchTotal * 100) + "%";
+      } else {
+        updateProgress(batchDone, batchTotal);
+      }
     }
 
-    // 启动 worker，从队列取任务并发执行
+    // 启动 worker 处理本批
+    var queue = batch.slice();
     var workers = [];
-    var workerCount = Math.min(CONCURRENCY, total);
+    var workerCount = Math.min(CONCURRENCY, queue.length);
     for (var w = 0; w < workerCount; w++) {
       workers.push((async function worker() {
         while (queue.length > 0) {
-          var chunk = queue.shift();
-          await translateOne(chunk);
+          await translateOne(queue.shift());
         }
       })());
     }
     await Promise.all(workers);
 
+    // 重建内容（包含已有译文）
     rebuildContent();
     transciseState.hasTranslation = true;
-    applyDisplayMode(transciseState.displayMode);
+    transciseState.translatedLang = transciseState.targetLang;
 
-    // 翻译完成后自动切换到翻译模式（启用显示模式按钮）
-    transciseState.viewMode = "translate";
-    var previewBtn = document.getElementById("transcise-preview-btn");
-    var translateBtn = document.getElementById("transcise-translate-btn");
-    var modeGroup = document.getElementById("transcise-mode-group");
-    if (previewBtn) previewBtn.classList.remove("active");
-    if (translateBtn) translateBtn.classList.add("active");
-    if (modeGroup) {
-      modeGroup.querySelectorAll(".transcise-mode-btn").forEach(function(b) {
-        b.classList.remove("disabled");
-        b.disabled = false;
-      });
+    // 翻译过程中用户可能切了「预览」，此时保持预览状态
+    // 只在用户仍在翻译模式时才自动切回翻译并启用显示模式按钮
+    if (transciseState.viewMode !== "preview") {
+      transciseState.viewMode = "translate";
+      var previewBtn = document.getElementById("transcise-preview-btn");
+      var translateBtn = document.getElementById("transcise-translate-btn");
+      var modeGroup = document.getElementById("transcise-mode-group");
+      if (previewBtn) previewBtn.classList.remove("active");
+      if (translateBtn) translateBtn.classList.add("active");
+      if (modeGroup) {
+        modeGroup.querySelectorAll(".transcise-mode-btn").forEach(function(b) {
+          b.classList.remove("disabled");
+          b.disabled = false;
+        });
+      }
+      // 默认显示双语
+      applyDisplayMode(transciseState.displayMode);
     }
 
-    if (errors > 0 && errors < total) {
-      updateBtn("done");
-      showTBError("部分段落翻译失败 (" + errors + "/" + total + ")");
-    } else if (errors >= total) {
-      updateBtn("error");
-      showTBError("翻译失败，请重试");
+    // 还有剩余待译 → 设 scroll 懒加载
+    if (transciseState.pendingTextChunks.length > 0) {
+      setupScrollTrigger();
+      var st = document.getElementById("transcise-status");
+      if (st) {
+        st.textContent = "✔ 已翻译前部，滚动续译剩余 " + transciseState.pendingTextChunks.length + " 段";
+        st.className = "transcise-status status-success";
+      }
+      if (translateBtn) {
+        translateBtn.disabled = true;
+        translateBtn.classList.remove("loading");
+        translateBtn.textContent = "翻译中…";
+      }
+      // 错误处理（只在全部批次结束时才显示错误）
+      if (errors > 0) {
+        showTBError("部分段落翻译失败 (" + errors + " 段)");
+      }
     } else {
-      updateBtn("done");
+      finishTranslation(errors, total);
     }
   } catch(e) {
     updateBtn("error");
@@ -397,12 +476,140 @@ async function performTranslation() {
   }
 }
 
+/** 全部翻译完成后的收尾 */
+function finishTranslation(errors, total) {
+  cleanupScrollTrigger();
+  if (errors === undefined) { errors = 0; }
+  if (total === undefined) { total = 0; }
+  if (errors > 0 && errors < total) {
+    updateBtn("done");
+    showTBError("部分段落翻译失败 (" + errors + "/" + total + ")");
+  } else if (errors >= total) {
+    updateBtn("error");
+    showTBError("翻译失败，请重试");
+  } else {
+    updateBtn("done");
+  }
+}
+
+/** 分步翻译：翻译下一批待译内容 */
+async function translateNextBatch() {
+  if (transciseState.isTranslating) return;
+  if (!transciseState.pendingTextChunks || transciseState.pendingTextChunks.length === 0) {
+    cleanupScrollTrigger();
+    finishTranslation();
+    return;
+  }
+  // 委托给 performTranslation 内部的逻辑——但 performTranslation 会重建 chunks，
+  // 我们需要保留已译状态，只译待译部分
+  // 直接在这里复用翻译逻辑
+  transciseState.isTranslating = true;
+  try {
+    // 取一批待译（固定 chunk 数量）
+    var batch = transciseState.pendingTextChunks.slice(0, LAZY_BATCH_CHUNKS);
+    transciseState.pendingTextChunks = transciseState.pendingTextChunks.slice(LAZY_BATCH_CHUNKS);
+
+    var batchTotal = batch.length;
+    var batchDone = 0;
+    var errors = 0;
+    var CONCURRENCY = 3;
+
+    async function translateOne(chunk) {
+      try {
+        var rs = await chrome.runtime.sendMessage({
+          type: "TRANSLATE",
+          text: chunk.text,
+          targetLang: transciseState.targetLang,
+          apiKey: transciseState.apiKey,
+          model: transciseState.model
+        });
+        if (rs && rs.success) {
+          transciseState.translations[chunk.id] = rs.translation;
+          transciseState.translatedIds[chunk.id] = true;
+        } else {
+          errors++;
+        }
+      } catch(e) {
+        errors++;
+      }
+      batchDone++;
+      var st = document.getElementById("transcise-status");
+      var pf = document.getElementById("transcise-progress-fill");
+      if (st) { st.textContent = "翻译中 " + batchDone + "/" + batchTotal; st.className = "transcise-status status-loading"; }
+      if (pf) pf.style.width = Math.round(batchDone / batchTotal * 100) + "%";
+    }
+
+    var queue = batch.slice();
+    var workers = [];
+    var workerCount = Math.min(CONCURRENCY, queue.length);
+    for (var w = 0; w < workerCount; w++) {
+      workers.push((async function worker() {
+        while (queue.length > 0) {
+          await translateOne(queue.shift());
+        }
+      })());
+    }
+    await Promise.all(workers);
+
+    // 重建内容
+    rebuildContent();
+
+    if (transciseState.pendingTextChunks.length > 0) {
+      var st = document.getElementById("transcise-status");
+      if (st) {
+        st.textContent = "✔ 已翻译前部，滚动续译剩余 " + transciseState.pendingTextChunks.length + " 段";
+        st.className = "transcise-status status-success";
+      }
+    } else {
+      cleanupScrollTrigger();
+      if (errors > 0) {
+        updateBtn("done");
+        showTBError("部分段落翻译失败 (" + errors + " 段)");
+      } else {
+        updateBtn("done");
+      }
+    }
+  } catch(e) {
+    showTBError("翻译下一批失败，仍可滚动重试");
+  } finally {
+    transciseState.isTranslating = false;
+  }
+}
+
+/** 设置 scroll 监听器，用户滚动到底附近时触发下一批翻译 */
+function setupScrollTrigger() {
+  cleanupScrollTrigger();
+  var handler = function() {
+    if (transciseState.isTranslating) return;
+    if (!transciseState.pendingTextChunks || transciseState.pendingTextChunks.length === 0) {
+      cleanupScrollTrigger();
+      return;
+    }
+    var scrollBottom = window.scrollY + window.innerHeight;
+    var docHeight = document.documentElement.scrollHeight;
+    // 距底部不足 1.5 屏时触发
+    if (docHeight - scrollBottom < window.innerHeight * SCROLL_TRIGGER_MARGIN) {
+      translateNextBatch();
+    }
+  };
+  window.addEventListener("scroll", handler, { passive: true });
+  transciseState.scrollHandler = handler;
+}
+
+/** 移除 scroll 监听器 */
+function cleanupScrollTrigger() {
+  if (transciseState.scrollHandler) {
+    window.removeEventListener("scroll", transciseState.scrollHandler);
+    transciseState.scrollHandler = null;
+  }
+}
+
 function splitChunks(md) {
   var l = md.split("\n"), chunks = [], id = 0, cur = "", inCode = false;
   for (var i = 0; i < l.length; i++) {
     var li = l[i];
     if (li.trim().startsWith("`")) { if (cur.trim()) { chunks.push({ id: id++, text: cur.trim(), type: inCode ? "code" : "text" }); cur = ""; } chunks.push({ id: id++, text: li, type: "code" }); inCode = !inCode; continue; }
-    if (inCode) { chunks.push({ id: id++, text: li, type: "code" }); continue; }
+    if (inCode) { cur += (cur ? "\n" : "") + li; continue; }
     if (li.trim() === "") { if (cur.trim()) { chunks.push({ id: id++, text: cur.trim(), type: "text" }); cur = ""; } continue; }
     cur += (cur ? "\n" : "") + li; if (cur.length >= 2000) { chunks.push({ id: id++, text: cur.trim(), type: "text" }); cur = ""; }
   }
@@ -411,7 +618,19 @@ function splitChunks(md) {
 }
 
 function rebuildContent() {
-  var c = document.getElementById("transcise-content-container"); if (!c) return; c.innerHTML = "";
+  var c = document.getElementById("transcise-content-container"); if (!c) return;
+  // 如果当前正在显示「仅原文」原始 HTML（_chunkHtml 存在），清除保存
+  // 后续新的翻译会自动通过 applyDisplayMode 切回双语
+  if (transciseState._chunkHtml) {
+    transciseState._chunkHtml = null;
+    // 模式按钮切回双语
+    transciseState.displayMode = "both";
+    document.querySelectorAll("#transcise-mode-group .transcise-mode-btn").forEach(function(b) {
+      b.classList.toggle("active", b.getAttribute("data-mode") === "both");
+    });
+  }
+  var scrollY = window.scrollY;  // 保存滚动位置，分步翻译时防止跳动
+  c.innerHTML = "";
   var p = typeof marked.parse === "function" ? function(t) { return marked.parse(t); } : function(t) { return "<p>" + escapeHtml(t) + "</p>"; };
   for (var i = 0; i < transciseState.chunks.length; i++) {
     var ch = transciseState.chunks[i];
@@ -420,12 +639,28 @@ function rebuildContent() {
     var tr = transciseState.translations[ch.id]; if (tr) { var te = document.createElement("div"); te.className = "transcise-translation"; te.setAttribute("data-chunk-id", String(ch.id)); te.innerHTML = p(tr); c.appendChild(te); }
   }
   c.classList.add("has-translations");
+  window.scrollTo(0, scrollY);  // 恢复滚动位置
 }
 
 function applyDisplayMode(m) {
   var c = document.getElementById("transcise-content-container"); if (!c) return;
   c.classList.remove("mode-both","mode-translation","mode-original"); c.classList.add("mode-" + m); transciseState.displayMode = m;
   document.querySelectorAll(".transcise-mode-btn").forEach(function(b) { b.classList.toggle("active", b.getAttribute("data-mode")===m); });
+
+  // 「仅原文」模式恢复为初始 marked 渲染，保证与刚拖入时的排版一致
+  // 避免 chunk 式重建导致的代码块每行独立成块的问题
+  if (m === "original" && transciseState.originalHtml && transciseState.hasTranslation) {
+    // 保存当前 chunk DOM 以便切回双语/仅译文时恢复
+    transciseState._chunkHtml = c.innerHTML;
+    c.innerHTML = transciseState.originalHtml;
+  } else if (m !== "original" && transciseState._chunkHtml) {
+    // 从仅原文切回其他模式：恢复 chunk 式内容（含译文）
+    c.innerHTML = transciseState._chunkHtml;
+    transciseState._chunkHtml = null;
+    c.classList.remove("mode-both","mode-translation","mode-original");
+    c.classList.add("mode-" + m);
+    c.classList.add("has-translations");
+  }
 }
 
 function updateBtn(s) {
@@ -522,7 +757,7 @@ function diagnoseLayout() {
     padding: cs.padding,
     maxWidth: cs.maxWidth
   }];
-  var pres = container.querySelectorAll("pre");
+  var pres = Array.from(container.querySelectorAll("pre"));
   pres.forEach(function(pre, i) {
     var r = pre.getBoundingClientRect();
     var s = getComputedStyle(pre);

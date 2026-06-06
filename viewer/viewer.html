@@ -61,12 +61,15 @@
     /* 代码块自动换行：防止长 URL 或路径被截断 */
     .transcise-markdown-body pre { white-space: pre-wrap; word-break: break-word; }
     .transcise-markdown-body code { word-break: break-word; }
+
+    /* 仅译文模式：代码块保持可见（不被 .mode-translation > :not(.transcise-translation) 隐藏） */
+    .transcise-markdown-body.mode-translation > pre { display: block; }
   </style>
 </head>
 <body>
   <div id="drop-zone">
     <div class="drop-icon">📄</div>
-    <div class="drop-title">Transcise v1.2.0 — Markdown Translator</div>
+    <div class="drop-title">Transcise v1.3.0 — Markdown Translator</div>
     <div class="drop-subtitle">Drag a .md file here, or click to browse</div>
     <label class="drop-btn" for="file-input">📂 Open Markdown File</label>
     <input type="file" id="file-input" accept=".md,.markdown,.mdown,.mkd">
