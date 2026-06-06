@@ -109,7 +109,6 @@ transcise/
 │   ├── development.md         # 开发文档
 │   └── deployment.md          # 部署文档
 ├── icons/                     # 16/48/128 图标
-└── test/                      # 测试用 Markdown 文件
 ```
 
 ## 技术栈
