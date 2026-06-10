@@ -634,7 +634,11 @@ function rebuildContent() {
   var p = typeof marked.parse === "function" ? function(t) { return marked.parse(t); } : function(t) { return "<p>" + escapeHtml(t) + "</p>"; };
   for (var i = 0; i < transciseState.chunks.length; i++) {
     var ch = transciseState.chunks[i];
-    if (ch.type === "code") { var pr = document.createElement("pre"); pr.className = "transcise-code-block"; pr.setAttribute("data-chunk-id", String(ch.id)); pr.innerHTML = "<code>" + escapeHtml(ch.text) + "</code>"; c.appendChild(pr); continue; }
+    if (ch.type === "code") {
+      // 跳过代码块围栏行（``` 或 ```bash），marked 渲染会隐藏围栏只显示内容
+      if (/^`{3,}\w*$/.test(ch.text.trim())) { continue; }
+      var pr = document.createElement("pre"); pr.className = "transcise-code-block"; pr.setAttribute("data-chunk-id", String(ch.id)); pr.innerHTML = "<code>" + escapeHtml(ch.text) + "</code>"; c.appendChild(pr); continue;
+    }
     var o = document.createElement("div"); o.className = "transcise-original"; o.setAttribute("data-chunk-id", String(ch.id)); o.innerHTML = p(ch.text); c.appendChild(o);
     var tr = transciseState.translations[ch.id]; if (tr) { var te = document.createElement("div"); te.className = "transcise-translation"; te.setAttribute("data-chunk-id", String(ch.id)); te.innerHTML = p(tr); c.appendChild(te); }
   }
