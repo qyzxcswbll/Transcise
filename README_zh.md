@@ -6,6 +6,12 @@
 
 > Markdown 实时翻译 · Chrome 扩展
 
+<p align="center">
+  <img src="https://img.shields.io/badge/version-v1.3.0-blue" alt="版本">
+  <img src="https://img.shields.io/badge/Chrome-MV3-green" alt="MV3">
+  <img src="https://img.shields.io/badge/license-MIT-lightgrey" alt="许可">
+</p>
+
 [English](./README.md) | [中文文档](./README_zh.md)
 
 ---

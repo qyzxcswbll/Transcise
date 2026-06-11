@@ -6,6 +6,12 @@
 
 > Real-time Markdown Translator · Chrome Extension
 
+<p align="center">
+  <img src="https://img.shields.io/badge/version-v1.3.0-blue" alt="version">
+  <img src="https://img.shields.io/badge/Chrome-MV3-green" alt="MV3">
+  <img src="https://img.shields.io/badge/license-MIT-lightgrey" alt="license">
+</p>
+
 [中文文档](./README_zh.md) | [English](./README.md)
 
 ---
