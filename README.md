@@ -1,5 +1,9 @@
 # 🌐 Transcise
 
+<p align="center">
+  <img src="icons/icon48.png" alt="Transcise logo" width="48">
+</p>
+
 > Real-time Markdown Translator · Chrome Extension
 
 [中文文档](./README_zh.md) | [English](./README.md)
